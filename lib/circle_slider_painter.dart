@@ -3,8 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import 'helpers/math_helper.dart';
-
 const indicatorRadius = 20.0;
 
 class CircleSliderPainter extends CustomPainter {
@@ -13,20 +11,11 @@ class CircleSliderPainter extends CustomPainter {
 
   CircleSliderPainter({required this.widgetSize, required this.value});
 
-  final whiteCirclePainter = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.fill;
-
   @override
   void paint(Canvas canvas, Size size) {
     _drawSkeleton(canvas: canvas);
 
     _drawValueAndIndicators(canvas: canvas);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
   }
 
   void _drawSkeleton({required Canvas canvas}) {
@@ -37,7 +26,7 @@ class CircleSliderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = markSize;
 
-    final externalArc = Paint()
+    final externalArcPaint = Paint()
       ..color = Colors.white.withOpacity(0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = indicatorRadius * 2;
@@ -53,10 +42,6 @@ class CircleSliderPainter extends CustomPainter {
           const Color(0XFFFCCFC2),
         ],
       );
-
-    final backgroundPaint = Paint()
-      ..color = Colors.white
-      ..style = ui.PaintingStyle.fill;
 
     final backgroundOverlayPaint = Paint()
       ..style = PaintingStyle.fill
@@ -74,7 +59,7 @@ class CircleSliderPainter extends CustomPainter {
       0,
       math.pi * 2,
       false,
-      externalArc,
+      externalArcPaint,
     );
 
     canvas.drawArc(
@@ -94,21 +79,16 @@ class CircleSliderPainter extends CustomPainter {
     );
 
     canvas.drawCircle(Offset(widgetSize / 2, widgetSize / 2),
-        widgetSize / 2 - indicatorRadius * 2, backgroundPaint);
-
-    canvas.drawCircle(Offset(widgetSize / 2, widgetSize / 2),
         widgetSize / 2 - indicatorRadius * 2, backgroundOverlayPaint);
   }
 
   void _drawValueAndIndicators({required Canvas canvas}) {
     final path = Path();
 
-    final parsedValue = MathHelper.remap(value, 0, 100, 0, math.pi * 2);
-
     path.addArc(
       Rect.fromLTWH(0, 0, widgetSize, widgetSize),
       -math.pi / 2,
-      parsedValue,
+      value,
     );
 
     canvas.drawPath(
@@ -127,6 +107,7 @@ class CircleSliderPainter extends CustomPainter {
     );
 
     final metrics = path.computeMetrics().toList();
+
     if (metrics.isEmpty) {
       _drawIndicatorCircle(
         canvas: canvas,
@@ -134,6 +115,7 @@ class CircleSliderPainter extends CustomPainter {
       );
       return;
     }
+
     final tangent = metrics.first.getTangentForOffset(metrics.first.length);
 
     _drawIndicatorCircle(
@@ -146,6 +128,10 @@ class CircleSliderPainter extends CustomPainter {
     required Canvas canvas,
     required Offset position,
   }) {
+    final whiteCirclePainter = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
     final shadowPaint = Paint()
       ..color = Colors.black.withOpacity(0.6)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
@@ -153,5 +139,10 @@ class CircleSliderPainter extends CustomPainter {
     canvas.drawCircle(position, indicatorRadius * .75, shadowPaint);
 
     canvas.drawCircle(position, indicatorRadius, whiteCirclePainter);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }

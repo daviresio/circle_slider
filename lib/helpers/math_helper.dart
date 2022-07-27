@@ -43,4 +43,19 @@ class MathHelper {
     final distance = math.sqrt(dx + dy);
     return (distance - radius).abs() < touchArea;
   }
+
+  static double angleToValue(
+      double angle, double min, double max, double angleRange) {
+    return percentageToValue(angleToPercentage(angle, angleRange), min, max);
+  }
+
+  static double percentageToValue(double percentage, double min, double max) {
+    return ((max - min) / 100) * percentage + min;
+  }
+
+  static double angleToPercentage(double angle, double angleRange) {
+    final step = (angleRange / 100).clamp(0, 100);
+
+    return angle / step;
+  }
 }

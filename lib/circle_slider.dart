@@ -1,25 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'circle_slider_gesture_recognizer.dart';
 import 'circle_slider_painter.dart';
 import 'helpers/math_helper.dart';
-
-double angleToValue(double angle, double min, double max, double angleRange) {
-  return percentageToValue(angleToPercentage(angle, angleRange), min, max);
-}
-
-double percentageToValue(double percentage, double min, double max) {
-  return ((max - min) / 100) * percentage + min;
-}
-
-double angleToPercentage(double angle, double angleRange) {
-  final step = (angleRange / 100).clamp(0, 100);
-
-  return angle / step;
-}
 
 class CircleSlider extends StatefulWidget {
   final int maxValue;
@@ -34,7 +19,7 @@ class CircleSlider extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CircleSliderState createState() => _CircleSliderState();
+  State<CircleSlider> createState() => _CircleSliderState();
 }
 
 class _CircleSliderState extends State<CircleSlider> {
@@ -42,13 +27,14 @@ class _CircleSliderState extends State<CircleSlider> {
   bool isDragging = false;
   final touchPadding = 16.0;
 
-  void _notifyChange(Offset center, Offset localOffset) {
-    final radians = MathHelper.coordinatesToRadians(center, localOffset);
-    final currentValue = angleToValue(radians, 0, 100, math.pi * 2);
-    final newValue =
-        MathHelper.remap(currentValue, 0, 100, 0, widget.maxValue.toDouble())
-            .round();
-    widget.onChanged(newValue);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        size = MediaQuery.of(context).size.width * 0.75;
+      });
+    });
   }
 
   void _onPanDown(Offset details) {
@@ -67,7 +53,6 @@ class _CircleSliderState extends State<CircleSlider> {
       setState(() {
         isDragging = true;
       });
-      HapticFeedback.mediumImpact();
     }
   }
 
@@ -78,7 +63,6 @@ class _CircleSliderState extends State<CircleSlider> {
 
     if (isDragging) {
       _notifyChange(center, localOffset);
-      HapticFeedback.selectionClick();
     }
   }
 
@@ -87,58 +71,56 @@ class _CircleSliderState extends State<CircleSlider> {
       setState(() {
         isDragging = false;
       });
-      HapticFeedback.mediumImpact();
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        size = MediaQuery.of(context).size.width * 0.75;
-      });
-    });
+  void _notifyChange(Offset center, Offset localOffset) {
+    final radians = MathHelper.coordinatesToRadians(center, localOffset);
+    final currentValue = MathHelper.angleToValue(radians, 0, 100, math.pi * 2);
+    final newValue =
+        MathHelper.remap(currentValue, 0, 100, 0, widget.maxValue.toDouble())
+            .round();
+    widget.onChanged(newValue);
   }
 
   @override
   Widget build(BuildContext context) {
-    return RawGestureDetector(
-      gestures: <Type, GestureRecognizerFactory>{
-        CircleSliderGestureRecognizer:
-            GestureRecognizerFactoryWithHandlers<CircleSliderGestureRecognizer>(
-          () => CircleSliderGestureRecognizer(
-            onPanDown: _onPanDown,
-            onPanUpdate: _onPanUpdate,
-            onPanEnd: _onPanEnd,
-          ),
-          (CircleSliderGestureRecognizer instance) {},
-        ),
-      },
-      child: Stack(
-        children: [
-          CustomPaint(
+    return Stack(
+      children: [
+        RawGestureDetector(
+          gestures: <Type, GestureRecognizerFactory>{
+            CircleSliderGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                CircleSliderGestureRecognizer>(
+              () => CircleSliderGestureRecognizer(
+                onPanDown: _onPanDown,
+                onPanUpdate: _onPanUpdate,
+                onPanEnd: _onPanEnd,
+              ),
+              (CircleSliderGestureRecognizer instance) {},
+            ),
+          },
+          child: CustomPaint(
             painter: CircleSliderPainter(
                 widgetSize: size,
                 value: MathHelper.remap(widget.value.toDouble(), 0,
-                    widget.maxValue.toDouble(), 0, 100)),
+                    widget.maxValue.toDouble(), 0, math.pi * 2)),
             size: Size(size, size),
           ),
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.center,
-              child: Text(
-                '${widget.value}%',
-                style: const TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF3B08A),
-                ),
+        ),
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.center,
+            child: Text(
+              '${widget.value}%',
+              style: const TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFF3B08A),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
